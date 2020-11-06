@@ -23,7 +23,7 @@
           <div id="counter">
             <span
               :class="{ lit: power }"
-              v-text="showError ? 'NO' : displayCount"
+              v-text="showError ? 'NO' : timesUp ? 'TIME' : displayCount"
             ></span>
           </div>
         </div>
@@ -81,6 +81,7 @@ export default {
       showError: false,
       delay: "1500",
       currentDate: 0,
+      timesUp: false,
     };
   },
   computed: {
@@ -102,34 +103,40 @@ export default {
       this.hlRed = false;
       this.hlYellow = false;
       this.hlBlue = false;
+      this.timesUp = false;
     },
 
     input(tone) {
-      if (this.count == 1) {
+      if (this.userInput.length == 0) {
         this.currentDate = new Date().getTime();
       }
-      if (new Date().getTime() - this.currentDate < Number(this.delay)) {
-        if (!this.allowInput) return;
-        this.playTone(tone);
-        this.userInput.push(tone);
-        // Check if this was the wrong input
-        if (
-          this.userInput[this.userInput.length - 1] !=
-          this.series[this.userInput.length - 1]
-        ) {
-          this.showError = true;
-          setTimeout(this.reset, 3000);
-          return;
-        }
-        // If this was the final input
-        if (this.userInput.length == this.series.length) {
-          let self = this;
-          this.userInput = [];
-          setTimeout(function () {
-            self.addTone();
-            self.playSeries();
-          }, 1000);
-        }
+      if (!this.allowInput) return;
+
+      if (new Date().getTime() - this.currentDate > Number(this.delay)) {
+        this.timesUp = true;
+        setTimeout(this.reset, 1000);
+        return;
+      }
+      this.playTone(tone);
+      this.userInput.push(tone);
+      this.currentDate = new Date().getTime();
+      // Check if this was the wrong input
+      if (
+        this.userInput[this.userInput.length - 1] !=
+        this.series[this.userInput.length - 1]
+      ) {
+        this.showError = true;
+        setTimeout(this.reset, 1000);
+        return;
+      }
+      // If this was the final input
+      if (this.userInput.length == this.series.length) {
+        let self = this;
+        this.userInput = [];
+        setTimeout(function() {
+          self.addTone();
+          self.playSeries();
+        }, 1000);
       }
     },
     start() {
@@ -149,9 +156,9 @@ export default {
       this.playingSeries = true;
       let self = this;
       let delay = 1000;
-      this.series.forEach(function (tone, index, array) {
+      this.series.forEach(function(tone, index, array) {
         if (index == array.length - 1)
-          setTimeout(function () {
+          setTimeout(function() {
             if (self.started) {
               self.playTone(tone);
               self.allowInput = true;
@@ -159,7 +166,7 @@ export default {
             }
           }, delay);
         else
-          setTimeout(function () {
+          setTimeout(function() {
             self.playTone(tone);
           }, delay);
         delay += 1000;
@@ -200,7 +207,7 @@ export default {
           this.hlBlue = true;
           break;
       }
-      setTimeout(this.clearHighlights, 750);
+      setTimeout(this.clearHighlights, 400);
     },
     randomTone() {
       return Math.floor(Math.random() * 4) + 1;
