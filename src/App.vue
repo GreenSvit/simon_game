@@ -23,7 +23,7 @@
           <div id="counter">
             <span
               :class="{ lit: power }"
-              v-text="showError ? 'NO' : timesUp ? 'TIME' : displayCount"
+              v-text="showError ? 'NO' : timesUp ? 'TIME' : showCounter"
             ></span>
           </div>
         </div>
@@ -31,27 +31,27 @@
       <div id="buttons">
         <div
           class="button"
-          :class="{ highlight: hlGreen }"
+          :class="{ highlight: greenLight }"
           id="green"
-          @click="input(1)"
+          @click="click(1)"
         ></div>
         <div
           class="button"
-          :class="{ highlight: hlRed }"
+          :class="{ highlight: redLight }"
           id="red"
-          @click="input(2)"
+          @click="click(2)"
         ></div>
         <div
           class="button"
-          :class="{ highlight: hlYellow }"
+          :class="{ highlight: yellowLight }"
           id="yellow"
-          @click="input(3)"
+          @click="click(3)"
         ></div>
         <div
           class="button"
-          :class="{ highlight: hlBlue }"
+          :class="{ highlight: blueLight }"
           id="blue"
-          @click="input(4)"
+          @click="click(4)"
         ></div>
       </div>
     </div>
@@ -68,101 +68,102 @@ export default {
   name: "App",
   data() {
     return {
-      started: false, // Has the game started?
-      count: 0, // What's the current count?
-      series: [], // The current series of tones
-      playingSeries: false, // Is the game currently outputting the series of tones?
-      userInput: [],
-      hlRed: false,
-      hlGreen: false,
-      hlYellow: false,
-      hlBlue: false,
-      allowInput: false,
-      showError: false,
-      delay: "1500",
+      launched: false, // Игра запущена ?
+      timesUp: false, // Время вышло?
       currentDate: 0,
-      timesUp: false,
+      counter: 0, // Счетчик
+      gameRow: [], // Текущий рандомный игровой ряд
+      isPlaying: false, // Проигрывается ли текущий рандомный игровой ряд?
+      userRow: [], // Пользовательский игровой ряд
+      redLight: false,
+      greenLight: false,
+      yellowLight: false,
+      blueLight: false,
+      allowClick: false, // Можно ли кликать ?
+      showError: false,
+      delay: "1500", // Текщее минимальное время, за которое юзер должен кликнуть (уровень сложности)
     };
   },
   computed: {
-    displayCount() {
-      return this.count;
+    // Показать счетчик
+    showCounter() {
+      return this.counter;
     },
   },
   methods: {
-    reset() {
-      // Reset the game state
-      this.started = false;
-      this.count = 0;
-      this.series = [];
-      this.userInput = [];
-      this.allowInput = false;
-      this.playingSeries = false;
-      this.showError = false;
-      this.hlGreen = false;
-      this.hlRed = false;
-      this.hlYellow = false;
-      this.hlBlue = false;
+    restart() {
+      // Перезапуск игры
+      this.launched = false;
       this.timesUp = false;
+      this.counter = 0;
+      this.gameRow = [];
+      this.userRow = [];
+      this.allowClick = false;
+      this.isPlaying = false;
+      this.showError = false;
+      this.greenLight = false;
+      this.redLight = false;
+      this.yellowLight = false;
+      this.blueLight = false;
     },
 
-    input(tone) {
-      if (this.userInput.length == 0) {
+    click(tone) {
+      if (this.userRow.length == 0) {
         this.currentDate = new Date().getTime();
       }
-      if (!this.allowInput) return;
+      if (!this.allowClick) return;
 
       if (new Date().getTime() - this.currentDate > Number(this.delay)) {
         this.timesUp = true;
-        setTimeout(this.reset, 1000);
+        setTimeout(this.restart, 1000);
         return;
       }
       this.playTone(tone);
-      this.userInput.push(tone);
+      this.userRow.push(tone);
       this.currentDate = new Date().getTime();
-      // Check if this was the wrong input
+      // Ошибка
       if (
-        this.userInput[this.userInput.length - 1] !=
-        this.series[this.userInput.length - 1]
+        this.userRow[this.userRow.length - 1] !=
+        this.gameRow[this.userRow.length - 1]
       ) {
         this.showError = true;
-        setTimeout(this.reset, 1000);
+        setTimeout(this.restart, 1000);
         return;
       }
-      // If this was the final input
-      if (this.userInput.length == this.series.length) {
+      // Если это был последний клик
+      if (this.userRow.length == this.gameRow.length) {
         let self = this;
-        this.userInput = [];
+        this.userRow = [];
         setTimeout(function() {
-          self.addTone();
-          self.playSeries();
+          self.addColor();
+          self.playGameRow();
         }, 1000);
       }
     },
     start() {
-      if (this.count == 0 || this.allowInput) {
-        this.reset();
-        this.started = true;
-        this.addTone();
-        this.playSeries();
+      if (this.counter == 0 || this.allowClick) {
+        this.restart();
+        this.launched = true;
+        this.addColor();
+        this.playGameRow();
       }
     },
-    addTone() {
-      this.count++;
-      this.series.push(this.randomTone());
+    addColor() {
+      this.counter++;
+      this.gameRow.push(this.randomTone());
     },
-    playSeries() {
-      this.allowInput = false;
-      this.playingSeries = true;
+    playGameRow() {
+      this.allowClick = false;
+      this.isPlaying = true;
       let self = this;
       let delay = 1000;
-      this.series.forEach(function(tone, index, array) {
+      this.gameRow.forEach(function(tone, index, array) {
         if (index == array.length - 1)
           setTimeout(function() {
-            if (self.started) {
+            if (self.launched) {
               self.playTone(tone);
-              self.allowInput = true;
-              self.playingSeries = false;
+              self.allowClick = true;
+              self.isPlaying = false;
             }
           }, delay);
         else
@@ -171,13 +172,13 @@ export default {
           }, delay);
         delay += 1000;
       });
-      this.playingSeries = false;
+      this.isPlaying = false;
     },
-    clearHighlights() {
-      this.hlGreen = false;
-      this.hlRed = false;
-      this.hlYellow = false;
-      this.hlBlue = false;
+    turnOffLight() {
+      this.greenLight = false;
+      this.redLight = false;
+      this.yellowLight = false;
+      this.blueLight = false;
     },
     // Plays the tone & highlights the color
     playTone(tone) {
@@ -186,28 +187,28 @@ export default {
           this.$refs.sound1.pause();
           this.$refs.sound1.currentTime = 0;
           this.$refs.sound1.play();
-          this.hlGreen = true;
+          this.greenLight = true;
           break;
         case 2:
           this.$refs.sound2.pause();
           this.$refs.sound2.currentTime = 0;
           this.$refs.sound2.play();
-          this.hlRed = true;
+          this.redLight = true;
           break;
         case 3:
           this.$refs.sound3.pause();
           this.$refs.sound3.currentTime = 0;
           this.$refs.sound3.play();
-          this.hlYellow = true;
+          this.yellowLight = true;
           break;
         case 4:
           this.$refs.sound4.pause();
           this.$refs.sound4.currentTime = 0;
           this.$refs.sound4.play();
-          this.hlBlue = true;
+          this.blueLight = true;
           break;
       }
-      setTimeout(this.clearHighlights, 400);
+      setTimeout(this.turnOffLight, 400);
     },
     randomTone() {
       return Math.floor(Math.random() * 4) + 1;
@@ -252,7 +253,6 @@ h1 {
   max-height: 680px;
   min-height: 680px;
   background-color: $color-dark-gray;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,23 +275,19 @@ h1 {
 }
 #green {
   background-color: $color-green;
-  border-top-left-radius: 300px;
   margin-bottom: 20px;
   box-shadow: inset 3px 3px 10px rgba(255, 255, 255, 0.3);
 }
 #blue {
   background-color: $color-blue;
-  border-bottom-right-radius: 300px;
   box-shadow: inset -3px -3px 10px rgba(255, 255, 255, 0.3);
 }
 #yellow {
   background-color: $color-yellow;
-  border-bottom-left-radius: 300px;
   box-shadow: inset 3px -3px 10px rgba(255, 255, 255, 0.3);
 }
 #red {
   background-color: $color-red;
-  border-top-right-radius: 300px;
   margin-bottom: 20px;
   box-shadow: inset -3px 3px 10px rgba(255, 255, 255, 0.3);
 }
@@ -317,21 +313,12 @@ h1 {
   max-width: 300px;
   min-height: 300px;
   max-height: 300px;
-  border-radius: 50%;
   background-color: $color-light-gray;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
   color: $color-dark-gray;
-}
-#title {
-  margin-top: 20px;
-  text-align: center;
-  background-color: $color-light-gray;
-  width: 200px;
-  border-top-left-radius: 50%;
-  border-top-right-radius: 50%;
 }
 #controls {
   display: flex;
