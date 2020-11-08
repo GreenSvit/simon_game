@@ -16,19 +16,9 @@
       ref="sound4"
       src="https://s3.amazonaws.com/freecodecamp/simonSound4.mp3"
     ></audio>
-    <div id="simon">
-      <div id="center">
-        <div id="controls">
-          <a id="start" class="btn" @click="start"></a>
-          <div id="counter">
-            <span
-              :class="{ lit: power }"
-              v-text="showError ? 'NO' : timesUp ? 'TIME' : showCounter"
-            ></span>
-          </div>
-        </div>
-      </div>
-      <div id="buttons">
+    <div class="game">
+      <h1 class="game__title">Simon Game</h1>
+      <div class="game__panel">
         <div
           class="button"
           :class="{ highlight: greenLight }"
@@ -54,12 +44,22 @@
           @click="click(4)"
         ></div>
       </div>
+      <div class="game__controls">
+        <a class="game__start" @click="start">New Game</a>
+        <select class="game__level" v-model="delay" name="level">
+          <option value="1500">Легкий</option>
+          <option value="1000">Средний</option>
+          <option value="400">Сложный</option>
+        </select>
+        <div class="game__counter">
+          <span
+            v-text="
+              showError ? 'WRONG COLOR' : timesUp ? 'TIME IS UP' : showCounter
+            "
+          ></span>
+        </div>
+      </div>
     </div>
-    <select v-model="delay" name="level">
-      <option value="1500">Легкий</option>
-      <option value="1000">Средний</option>
-      <option value="400">Сложный</option>
-    </select>
   </div>
 </template>
 
@@ -107,7 +107,7 @@ export default {
       this.blueLight = false;
     },
 
-    click(tone) {
+    click(color) {
       if (this.userRow.length == 0) {
         this.currentDate = new Date().getTime();
       }
@@ -118,8 +118,8 @@ export default {
         setTimeout(this.restart, 1000);
         return;
       }
-      this.playTone(tone);
-      this.userRow.push(tone);
+      this.playSound(color);
+      this.userRow.push(color);
       this.currentDate = new Date().getTime();
       // Ошибка
       if (
@@ -130,7 +130,7 @@ export default {
         setTimeout(this.restart, 1000);
         return;
       }
-      // Если это был последний клик
+      // Проверяем на последний клик
       if (this.userRow.length == this.gameRow.length) {
         let self = this;
         this.userRow = [];
@@ -140,7 +140,9 @@ export default {
         }, 1000);
       }
     },
+    // Старт игры
     start() {
+      // Либо счетчик на нуле (игра не начата), либо в данный момент не проигрывется игровой ряд
       if (this.counter == 0 || this.allowClick) {
         this.restart();
         this.launched = true;
@@ -150,27 +152,27 @@ export default {
     },
     addColor() {
       this.counter++;
-      this.gameRow.push(this.randomTone());
+      this.gameRow.push(this.randomColor());
     },
     playGameRow() {
       this.allowClick = false;
       this.isPlaying = true;
       let self = this;
-      let delay = 1000;
-      this.gameRow.forEach(function(tone, index, array) {
+      let playDelay = 1000;
+      this.gameRow.forEach(function(color, index, array) {
         if (index == array.length - 1)
           setTimeout(function() {
             if (self.launched) {
-              self.playTone(tone);
+              self.playSound(color);
               self.allowClick = true;
               self.isPlaying = false;
             }
-          }, delay);
+          }, playDelay);
         else
           setTimeout(function() {
-            self.playTone(tone);
-          }, delay);
-        delay += 1000;
+            self.playSound(color);
+          }, playDelay);
+        playDelay += 1000;
       });
       this.isPlaying = false;
     },
@@ -180,9 +182,9 @@ export default {
       this.yellowLight = false;
       this.blueLight = false;
     },
-    // Plays the tone & highlights the color
-    playTone(tone) {
-      switch (tone) {
+    // Подсвечиваем блок и проигрываем звук
+    playSound(color) {
+      switch (color) {
         case 1:
           this.$refs.sound1.pause();
           this.$refs.sound1.currentTime = 0;
@@ -210,7 +212,7 @@ export default {
       }
       setTimeout(this.turnOffLight, 400);
     },
-    randomTone() {
+    randomColor() {
       return Math.floor(Math.random() * 4) + 1;
     },
   },
@@ -223,43 +225,47 @@ $color-black: #000;
 $color-dark-gray: #2e2e2e;
 $color-med-gray: #666;
 $color-light-gray: #ccc;
-$color-green: darken(green, 5%);
-$color-red: darken(red, 10%);
-$color-yellow: darken(#ffd700, 10%);
-$color-blue: darken(#0000cd, 5%);
+$color-green: darken(#6ccc49, 5%);
+$color-red: darken(#ef6055, 10%);
+$color-yellow: darken(#efe155, 10%);
+$color-blue: darken(#54e3f1, 5%);
 $color-white: #fff;
-$color-light-green: lighten(green, 5%);
-$color-light-red: lighten(red, 5%);
-$color-light-blue: lighten(#0000cd, 5%);
-$color-light-yellow: lighten(#ffd700, 5%);
-$color-bisque: #ffe4c4;
+$color-light-green: lighten(#6ccc49, 5%);
+$color-light-red: lighten(#ef6055, 5%);
+$color-light-blue: lighten(#54e3f1, 5%);
+$color-light-yellow: lighten(#efe155, 5%);
+$bgBlue: #11192a;
+
+// Mixins
+
+@mixin gameControl {
+  font-size: 16px;
+  text-transform: uppercase;
+  padding: 10px 16px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
 
 // Main Styles
 body {
   font-family: "Open Sans", sans-serif;
   user-select: none;
-  background-color: $color-bisque;
+  background-color: $bgBlue;
 }
-h1 {
-  font-family: "Russo One", sans-serif;
-  font-size: 3rem;
-  cursor: default;
-  margin: 1rem 0;
-}
-#simon {
-  margin: 2rem auto 0 auto;
-  max-width: 680px;
-  min-width: 680px;
-  max-height: 680px;
-  min-height: 680px;
-  background-color: $color-dark-gray;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.game {
+  margin: 0 auto;
+  max-width: 620px;
+  min-width: 620px;
+  max-height: 620px;
+  min-height: 620px;
   position: relative;
-  box-shadow: 0px 0px 18px rgba(0, 0, 0, 0.6);
 }
-#buttons {
+
+.game__title {
+  color: $color-blue;
+  text-align: center;
+}
+.game__panel {
   display: flex;
   flex-wrap: wrap;
   max-width: 620px;
@@ -272,24 +278,21 @@ h1 {
   min-height: 300px;
   max-width: 300px;
   max-height: 300px;
+  border-radius: 10px;
 }
 #green {
   background-color: $color-green;
   margin-bottom: 20px;
-  box-shadow: inset 3px 3px 10px rgba(255, 255, 255, 0.3);
 }
 #blue {
   background-color: $color-blue;
-  box-shadow: inset -3px -3px 10px rgba(255, 255, 255, 0.3);
 }
 #yellow {
   background-color: $color-yellow;
-  box-shadow: inset 3px -3px 10px rgba(255, 255, 255, 0.3);
 }
 #red {
   background-color: $color-red;
   margin-bottom: 20px;
-  box-shadow: inset -3px 3px 10px rgba(255, 255, 255, 0.3);
 }
 #green.highlight {
   background-color: $color-light-green;
@@ -304,104 +307,55 @@ h1 {
   background-color: $color-light-yellow;
 }
 
-// Center Controls
-#center {
-  border: 20px solid $color-dark-gray;
+// Controls
+.game__controls {
   box-sizing: border-box;
-  position: absolute;
   min-width: 300px;
-  max-width: 300px;
-  min-height: 300px;
-  max-height: 300px;
-  background-color: $color-light-gray;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
   color: $color-dark-gray;
-}
-#controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-width: 180px;
-  margin-top: 0.5rem;
+  margin-top: 40px;
+  padding-left: 30px;
+  padding-right: 30px;
 }
-#counter {
-  display: inline-block;
-  width: 60px;
-  height: 40px;
-  color: $color-med-gray;
-  background-color: $color-black;
-  border: 4px solid $color-dark-gray;
+
+.game__counter {
+  @include gameControl;
+  padding-left: 0px;
+  padding-right: 0px;
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 150px;
+  max-width: 150px;
+  color: darken($color-green, 40%);
+  background-color: $color-green;
+  border: 3px solid darken($color-green, 30%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 1.6rem;
-}
-.lit {
-  color: $color-red;
-}
-#switch {
-  cursor: pointer;
-  display: inline-block;
-  width: 50px;
-  height: 25px;
-  background-color: $color-dark-gray;
-  position: relative;
-}
-#switch:after {
-  content: "";
-  position: absolute;
-  top: 0;
-  height: 19px;
-  width: 19px;
-  border: 3px solid $color-dark-gray;
-  background-color: $color-red;
-}
-#switch.off:after {
-  left: 0;
-}
-#switch.on:after {
-  right: 0;
-}
-.btn {
-  cursor: pointer;
-  position: relative;
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  background-color: $color-yellow;
-  border-radius: 50%;
-  border: 4px solid $color-dark-gray;
-  margin-top: 1rem;
-  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
-}
-.btn::after {
-  position: absolute;
-  top: -20px;
-  left: -25%;
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-.btn:hover {
-  background-color: $color-light-yellow;
-}
-#start.btn {
-  background-color: $color-red;
-}
-#start.btn:hover {
-  background-color: $color-light-red;
-}
-#start::after {
-  content: "Start";
 }
 
-footer {
-  padding: 3rem 0;
-  text-align: center;
-  font-size: 0.875rem;
+.game__start {
+  @include gameControl;
+  cursor: pointer;
+  background-color: $color-red;
+  color: white;
+  border: 3px solid darken($color-red, 20%);
+
+  &:hover {
+    background-color: lighten($color-red, 15%);
+  }
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+.game__level {
+  @include gameControl;
+  background-color: lighten($color-blue, 25%);
+  border: 3px solid darken($color-blue, 40%);
 }
 </style>
